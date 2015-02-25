@@ -16,13 +16,13 @@
             + -> positive, for simple: \i+; available: n,i,f
             - -> negative, for simple: \i-; available: i,f
             (a;b) -> open interval from a to b, for simple: \n(100;200); available: n,i,f
-                i means positive infinity (optional +i)
-                -i means negative infinity
+                i means positive infinity (optional i+)
+                i- means negative infinity
                 n means no terms, for simple: \n(n;10) means n<10
             <a;b> -> close interval from a to b, for simple: \n<21;53>; available: n,i,f
             <a;b) or (a;b> -> derivative of the above, for simple: \i<0;15); available: n,i,f
-                i means positive infinity (optional +i), only with open interval
-                -i means negative infinity, only with open interval
+                i means positive infinity (optional i+), only with open interval
+                i- means negative infinity, only with open interval
                 n means no terms, for simple: \n<8;n) means n>8, only with open interval
             <a -> less than a, for simple: \n<5; available: n,i,f
             <=a -> less equal to a, for simple: \n<=15; available: n,i,f
