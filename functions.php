@@ -1,5 +1,5 @@
 <?php
-	function optimalizeRegexArray($matches){
+	function optimizeRegexArray($matches){
 		$array=array();
 		$a=0;
 		foreach($matches as $key=>$value){
@@ -9,7 +9,7 @@
 			} # if()
 		} # foreach()
 		return $array;
-	}
+	} # optimalizeRegexArray()
 
 	define('REG_MATCH_NEW',1);
 	define('REG_MATCH_OLD',2);
@@ -17,7 +17,7 @@
 		switch($mode){
 			case REG_MATCH_NEW:
 				$a=preg_match($pattern,$subject,$matches,PREG_OFFSET_CAPTURE);
-				$matches=optimalizeRegexArray($matches);
+				$matches=optimizeRegexArray($matches);
 				return $a;
 				break;
 			case REG_MATCH_OLD:

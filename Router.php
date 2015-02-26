@@ -7,9 +7,9 @@
 	 *  4) Unknown characteristics
 	 */
 
-	abstract class Router {
-		const ROUTER_GET=1;
-		const ROUTER_POST=2;
+	namespace ventaquil;
+
+	abstract class Router implements \router_interface {
 
 		public static function decodeLink($link,$mode=self::ROUTER_GET){
 			$array=array();
@@ -32,7 +32,7 @@
 					','
 				), # array()
 				$link
-			);
+			); # $link
 
 			if(!empty($link)){
 				if(preg_match('/^([a-zA-Z][a-zA-Z0-9]{0,}([\=]([a-zA-Z0-9]+([\,][a-zA-Z0-9]+)?[\;]?)+)?[\/]?)+$/',$link)){
@@ -474,6 +474,33 @@
 					throw new RouterException(2);
 			} # switch()
 		} # convert()
+
+		public static function page($name,$mode=self::ROUTER_GET){
+			$name=preg_replace(
+				array(
+					'/[\/]+/',
+					'/^[\/]/',
+					'/[\/]$/'
+				), # array()
+				array(
+					'/',
+					NULL,
+					NULL
+				), # array()
+				$name
+			); # $name
+
+			switch($mode){
+				case self::ROUTER_GET:
+					return array_key_exists($name,$_GET);
+					break;
+				case self::ROUTER_POST:
+					return array_key_exists($name,$_POST);
+					break;
+				default:
+					throw new RouterException(2);
+			} # switch()
+		} # page()
 	} # Router
 
-	class RouterException extends Exception {};
+	class RouterException extends \Exception {};

@@ -75,7 +75,17 @@ or
 ###Check link
 
 ```php
+		use ventaquil\Router;
+		
     if(Router::checkParams($view)){
-      // code
+      if(Router::page('basic')){
+				// code
+			} # if()
+			elseif(Router::page('basic/more')){
+				// it works!
+			} # elseif()
+			elseif(Router::page('basic/unknownpage')){
+				// it works too!
+			} # elseif()
     } # if()
 ```
