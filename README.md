@@ -76,9 +76,9 @@ or
 
 ```php
 		use ventaquil\Router;
-		
-    if(Router::checkParams($view)){
-      if(Router::page('basic')){
+
+		if(Router::checkParams($view)){
+			if(Router::page('basic')){
 				// code
 			} # if()
 			elseif(Router::page('basic/more')){
@@ -87,5 +87,5 @@ or
 			elseif(Router::page('basic/unknownpage')){
 				// it works too!
 			} # elseif()
-    } # if()
+		} # if()
 ```

@@ -9,8 +9,7 @@
 
 	namespace ventaquil;
 
-	abstract class Router implements \router_interface {
-
+	abstract class Router implements router_interface {
 		public static function decodeLink($link,$mode=self::ROUTER_GET){
 			$array=array();
 

@@ -1,4 +1,6 @@
 <?php
+	namespace ventaquil;
+
 	interface router_interface {
 		const ROUTER_GET=1;
 		const ROUTER_POST=2;
