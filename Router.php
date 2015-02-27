@@ -500,6 +500,131 @@
 					throw new RouterException(2);
 			} # switch()
 		} # page()
+
+		private static function editbase(&$base){
+			if(empty($base)){
+				$base=$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
+			} # if()
+			else{
+				$base=preg_replace(
+					array(
+						'/[\/]+/',
+						'/^[\/]/',
+						'/[\/]$/'
+					), # array()
+					array(
+						'/',
+						NULL,
+						NULL
+					), # array()
+					$base
+				); # $base
+			} # else
+		} # editbase()
+
+		public static function countbase($base=NULL){
+			self::editbase($base);	
+			$base=explode('/',$base);
+			return count($base)-1;
+		} # countbase()
+
+		public static function link($string,$base=NULL){
+			if(reg_match('/^(\&|(\%)([!]{0,2}))?([0-9]?)?(.*)$/',$string,$matches)){ 
+				self::editbase($base);
+
+				switch($matches[0]){
+					case NULL:
+						return 'http://'.$matches[1];
+						break;
+					case '&':
+						if(is_numeric($matches[1])){
+							$base=explode('/',$base);
+							for($a=0,$b=count($base);$a<$b;$a++){
+								if($a==$matches[1]){
+									$base[$a+1]=$matches[2];
+								} # if()
+								elseif($a>$matches[1]){
+									unset($base[$a+1]);
+								} # else
+							} # for()
+							return 'http://'.implode('/',$base);
+						} # if()
+						else{
+							return 'http://'.$base.'/'.$matches[2];
+						} # else
+						break;
+					case $matches[1].$matches[2]:
+						if(empty($matches[4])){
+							$base=explode('/',$base);
+
+							if(is_numeric($matches[3])){
+								$base_size=count($base)-2;
+								if($base_size>=$matches[3]){
+									switch($matches[2]){
+										case '!':
+											$index=$matches[3]+1;
+											$base[$index]=substr($base[$index],0,strpos($base[$index],'='));
+											break;
+										case '!!':
+											for($a=1,$b=$matches[3]+1;$a<=$b;$a++){
+												$c=strpos($base[$a],'=');
+												if($c){
+													$base[$a]=substr($base[$a],0,$c);
+												} # if()
+											} # for()
+											break;
+									} # switch()
+
+									for($a=$matches[3]+2;$a<$base_size;$a++){
+										unset($base[$a]);
+									} # for()
+
+									return 'http://'.implode('/',$base);
+								} # if()
+								else{
+									return 'http://'.implode('/',$base);
+								} # else
+							} # if()
+							else{
+								unset(end($base));//$base[count($base)-1]);
+
+								switch($matches[2]){
+									case '!':
+										$index=count($base)-1;
+										$base[$index]=substr($base[$index],0,strpos($base[$index],'='));
+										break;
+									case '!!':
+										for($a=0,$b=count($base);$a<$b;$a++){
+											if(is_numeric(strpos($base[$a],'='))){
+												$base[$a]=substr($base[$a],0,strpos($base[$a],'='));
+											} # if()
+										} # for()
+										break;
+								} # switch()
+
+								return 'http://'.implode('/',$base);
+							} # else
+						} # if()
+						else{
+							throw new RouterException(1);
+						} # else
+						break;
+				} # switch()
+			} # if()
+		} # link()
+
+		public static function htmllink($content,$string,$attributes=array(),$base=NULL){
+			$link=self::link($string,$base);
+
+			if(!empty($attributes)){
+				$attr='';
+				foreach($attributes as $name=>$value){
+					$attr.=' '.$name.'="'.$value.'"';
+				} # foreach()
+			} # if()
+
+			return '<a href="'.$link.'"'.((isset($attr))?$attr:NULL).'>'.$content.'</a>';
+		} # htmllink()
 	} # Router
 
 	class RouterException extends \Exception {};
