@@ -586,7 +586,7 @@
 								} # else
 							} # if()
 							else{
-								unset(end($base));//$base[count($base)-1]);
+								unset(end($base));
 
 								switch($matches[2]){
 									case '!':
@@ -614,8 +614,6 @@
 		} # link()
 
 		public static function htmllink($content,$string,$attributes=array(),$base=NULL){
-			$link=self::link($string,$base);
-
 			if(!empty($attributes)){
 				$attr='';
 				foreach($attributes as $name=>$value){
@@ -623,7 +621,7 @@
 				} # foreach()
 			} # if()
 
-			return '<a href="'.$link.'"'.((isset($attr))?$attr:NULL).'>'.$content.'</a>';
+			return '<a href="'.self::link($string,$base).'"'.((isset($attr))?$attr:NULL).'>'.$content.'</a>';
 		} # htmllink()
 	} # Router
 
