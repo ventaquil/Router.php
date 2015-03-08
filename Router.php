@@ -1,12 +1,4 @@
 <?php
-	/*
-	 * Exceptions:
-	 *  1) Incorrect link format
-	 *  2) Unknown mode
-	 *  3) Bad characteristics modification
-	 *  4) Unknown characteristics
-	 */
-
 	namespace ventaquil;
 
 	abstract class Router implements router_interface {
@@ -34,7 +26,7 @@
 			); # $link
 
 			if(!empty($link)){
-				if(preg_match('/^([a-zA-Z][a-zA-Z0-9]{0,}([\=]([a-zA-Z0-9]+([\,][a-zA-Z0-9]+)?[\;]?)+)?[\/]?)+$/',$link)){
+				if(preg_match('/^([a-zA-Z][a-zA-Z0-9]*([\=]([a-zA-Z0-9]+([\,][a-zA-Z0-9\-\_\.]+)?[\;]?)+)?[\/]?)+$/',$link)){
 					$link=explode('/',$link);
 					$subview_path='';
 					foreach($link as $key=>$subview){
@@ -63,7 +55,7 @@
 					} # foreach()
 				} # if()
 				else{
-					throw new RouterException(1);
+					throw new RouterException('Incorrect link format');
 				} # else
 
 				switch($mode){
@@ -74,7 +66,7 @@
 						$_POST=$array;
 						break;
 					default:
-						throw new RouterException(2);
+						throw new RouterException('Unknown mode');
 				} # switch()
 			} # if()
 		} # decodeLink()
@@ -88,7 +80,7 @@
 					$work_array=$_POST;
 					break;
 				default:
-					throw new RouterException(2);
+					throw new RouterException('Unknown mode');
 			} # switch()
 
 			if(isset($work_array)){
@@ -123,7 +115,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException(3);
+								throw new RouterException('Bad characteristics modification');
 							} # else
 							break;
 						case 'b':
@@ -138,7 +130,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException(3);
+								throw new RouterException('Bad characteristics modification');
 							} # else
 							break;
 						case 'n':
@@ -204,7 +196,7 @@
 													} # switch()
 												} # if()
 												else{
-													throw new RouterException(3);
+													throw new RouterException('Bad characteristics modification');
 												} # else
 										} # switch()
 									} # if()
@@ -215,7 +207,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException(3);
+								throw new RouterException('Bad characteristics modification');
 							} # else
 							break;
 						case 'i':
@@ -283,14 +275,14 @@
 												} # switch()
 											} # if()
 											else{
-												throw new RouterException(3);
+												throw new RouterException('Bad characteristics modification');
 											} # else
 									} # switch()
 								} # if()
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException(3);
+								throw new RouterException('Bad characteristics modification');
 							} # else
 							break;
 						case 'f':
@@ -358,14 +350,14 @@
 												} # switch()
 											} # if()
 											else{
-												throw new RouterException(3);
+												throw new RouterException('Bad characteristics modification');
 											} # else
 									} # switch()
 								} # if()
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException(3);
+								throw new RouterException('Bad characteristics modification');
 							} # else
 							break;
 						case 'c':
@@ -379,7 +371,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException(3);
+								throw new RouterException('Bad characteristics modification');
 							} # else
 							break;
 						case 's':
@@ -444,18 +436,18 @@
 												} # switch()
 											} # if()
 											else{
-												throw new RouterException(3);
+												throw new RouterException('Bad characteristics modification');
 											} # else
 									} # switch()
 								} # if()
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException(3);
+								throw new RouterException('Bad characteristics modification');
 							} # else
 							break;
 						default:
-							throw new RouterException(4);
+							throw new RouterException('Unknown characteristics');
 					} # switch()
 				} # if()
 			} # foreach()
@@ -470,7 +462,7 @@
 				case 'h':
 					return hexdec($number);
 				default:
-					throw new RouterException(2);
+					throw new RouterException('Unknown mode');
 			} # switch()
 		} # convert()
 
@@ -497,9 +489,38 @@
 					return array_key_exists($name,$_POST);
 					break;
 				default:
-					throw new RouterException(2);
+					throw new RouterException('Unknown mode');
 			} # switch()
 		} # page()
+
+		public static function pageonly($name,$mode=self::ROUTER_GET){
+			$name=preg_replace(
+				array(
+					'/[\/]+/',
+					'/^[\/]/',
+					'/[\/]$/'
+				), # array()
+				array(
+					'/',
+					NULL,
+					NULL
+				), # array()
+				$name
+			); # $name
+
+			switch($mode){
+				case self::ROUTER_GET:
+					$keys=array_keys($_GET);
+					return $keys[count($keys)-1]==$name;
+					break;
+				case self::ROUTER_POST:
+					$keys=array_keys($_POST);
+					return $keys[count($keys)-1]==$name;
+					break;
+				default:
+					throw new RouterException('Unknown mode');
+			} # switch()
+		} # pageonly()
 
 		private static function editbase(&$base){
 			if(empty($base)){
@@ -529,7 +550,7 @@
 		} # countbase()
 
 		public static function link($string,$base=NULL){
-			if(reg_match('/^(\&|(\%)([!]{0,2}))?([0-9]?)?(.*)$/',$string,$matches)){ 
+			if(reg_match('/^(\&|(\%)([!]{0,2}))?([0-9]*)?(.*?)(\*)?(?:\[(.*)\])?$/',$string,$matches)){ 
 				self::editbase($base);
 
 				switch($matches[0]){
@@ -538,22 +559,97 @@
 						break;
 					case '&':
 						if(is_numeric($matches[1])){
+							$matches[2]=explode('=',$matches[2]);
+
 							$base=explode('/',$base);
-							for($a=0,$b=count($base);$a<$b;$a++){
-								if($a==$matches[1]){
-									$base[$a+1]=$matches[2];
+
+							if(empty($matches[3])){
+								if(isset($matches[4])){
+									throw new RouterException('Bad characteristics modification');
 								} # if()
-								elseif($a>$matches[1]){
-									unset($base[$a+1]);
+
+								for($a=0,$b=count($base);$a<$b;$a++){
+									if($a==$matches[1]){
+										$base[$a+1]=implode('=',$matches[2]);
+									} # if()
+									elseif(($a>$matches[1])){
+										unset($base[$a+1]);
+									} # else
+								} # for()
+							} # if()
+							else{
+								$view=$base[$matches[1]+1];
+								$view_strpos=strpos($view,'=');
+								$view=(($view_strpos>0)?substr($view,0,$view_strpos):$view);
+
+								if(isset($matches[4])){
+									$matches[4]=explode(',',$matches[4]);
+									foreach($matches[4] as $key=>$arg){
+										$matches[4][$key]='/'.$matches[2][0].'\=(.*?[\;])?'.$arg.'(?:[\,](?:.*?[\;]|.*)|[\;])?/';
+									} # foreach()
+									$base[$matches[1]+1]=preg_replace($matches[4],$matches[2][0].'=$1',$base[$matches[1]+1]);
+								} # if()
+
+								if(isset($matches[2][1])){
+									if($view==$matches[2][0]){
+										$explode=explode(';',$matches[2][1]);
+										foreach($explode as $key=>$value){
+											$strpos=strpos($value,',');
+											if($strpos>0){
+												$explode[$key]=substr($value,0,$strpos);
+											} # if()
+										} # foreach()
+										$intopregmatch=implode('|',$explode);
+
+										if(preg_match('/'.$view.'=(?:.*?)?(?:'.$intopregmatch.')[\;]?/',$base[$matches[1]+1])){
+											$replace=explode(';',$matches[2][1]);
+											foreach($replace as $key=>$value){
+												$strpos=strpos($value,',');
+												if($strpos>0){
+													$from[$key]='/'.substr($value,0,$strpos).'([\,].*?[\;]|[\,].*)?/';
+												} # if()
+												else{
+													$from[$key]='/'.$value.'([\,].*?[\;])?/';
+												} # else
+												$to[$key]=$value.';';
+											} # foreach()
+
+											$base[$matches[1]+1]=preg_replace($from,$to,$base[$matches[1]+1]);
+										} # if()
+										else{
+											if($view_strpos>0){
+												$base[$matches[1]+1].=';'.$matches[2][1];
+											} # if()
+											else{
+												$base[$matches[1]+1].='='.$matches[2][1];
+											} # else
+										} # else
+									} # if()
+									else{
+										$base[$matches[1]+1]=implode('=',$matches[2]);
+									} # else
+								} # if()
+								else{
+									if($view!=$matches[2][0]){
+										$base[$matches[1]+1]=implode('=',$matches[2]);
+									} # if()
 								} # else
-							} # for()
+							} # else
+
+							$last_char=substr($base[$matches[1]+1],-1);
+							if($last_char==';'||$last_char=='='){
+								$base[$matches[1]+1]=substr($base[$matches[1]+1],0,strlen($base[$matches[1]+1])-1);
+							} # if()
+
 							return 'http://'.implode('/',$base);
 						} # if()
 						else{
 							return 'http://'.$base.'/'.$matches[2];
 						} # else
 						break;
-					case $matches[1].$matches[2]:
+					case '%':
+					case '%!':
+					case '%!!':
 						if(empty($matches[4])){
 							$base=explode('/',$base);
 
@@ -563,7 +659,10 @@
 									switch($matches[2]){
 										case '!':
 											$index=$matches[3]+1;
-											$base[$index]=substr($base[$index],0,strpos($base[$index],'='));
+											$strpos=strpos($base[$index],'=');
+											if($strpos){
+												$base[$index]=substr($base[$index],0,$strpos);
+											} # if()
 											break;
 										case '!!':
 											for($a=1,$b=$matches[3]+1;$a<=$b;$a++){
@@ -575,8 +674,8 @@
 											break;
 									} # switch()
 
-									for($a=$matches[3]+2;$a<$base_size;$a++){
-										unset($base[$a]);
+									for($a=$matches[3];$a<$base_size;$a++){
+										unset($base[$a+2]);
 									} # for()
 
 									return 'http://'.implode('/',$base);
@@ -586,7 +685,7 @@
 								} # else
 							} # if()
 							else{
-								unset(end($base));
+								unset($base[count($base)-1]); # delete last element
 
 								switch($matches[2]){
 									case '!':
@@ -606,7 +705,7 @@
 							} # else
 						} # if()
 						else{
-							throw new RouterException(1);
+							throw new RouterException('Incorrect link format');
 						} # else
 						break;
 				} # switch()
