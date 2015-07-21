@@ -2,10 +2,53 @@
 	namespace ventaquil;
 
 	abstract class Router implements router_interface {
-		public static function decodeLink($link,$mode=self::ROUTER_GET){
+		private $mode=self::ROUTER_GET; # Current Router mode
+
+		/*
+		 * @arg: (int) new Router mode
+		 * @ret: (bool) true or false
+		 * @desc: Method returns true if mode change correctly or false otherwise.
+		 */
+		public static function setMode($mode){
+			if(self::checkMode($mode)){
+				self::$mode=$mode;
+				return TRUE;
+			} # if()
+			else{
+				return FALSE;
+			} # else
+		} # setMode()
+
+		/*
+		 * @arg: (int) mode to check
+		 * @ret: (bool) true or false
+		 * @desc: Method checks sent mode and if it's correct return true, false otherwise.
+		 */
+		private static function checkMode($mode){
+			if(($mode==self::ROUTER_GET)||($mode==self::ROUTER_POST)){
+				return TRUE;
+			} # if()
+			else{
+				return FALSE;
+			} # else
+		} # checkMode()
+
+		/*
+		 * @arg: (string) link to decode
+		 * @arg^: (int) mode which link will be decoded, default NULL
+		 * @desc: Method decode sent link.
+		 */
+		public static function decodeLink($link,$mode=NULL){
+			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
+				$mode=self::$mode;
+			} # if()
+			elseif(!self::checkMode($mode)){ # If mode not correctly throw exception
+				throw new RouterException('Unknown mode');
+			} # elseif()
+
 			$array=array();
 
-			$link=preg_replace(
+			$link=preg_replace( # Prepare link to decode, remove unnecessary chars
 				array(
 					'/[\/]+/',
 					'/^[\/]/',
@@ -25,8 +68,8 @@
 				$link
 			); # $link
 
-			if(!empty($link)){
-				if(preg_match('/^([a-zA-Z][a-zA-Z0-9]*([\=]([a-zA-Z0-9]+([\,][a-zA-Z0-9\-\_\.]+)?[\;]?)+)?[\/]?)+$/',$link)){
+			if(!empty($link)){ # If link is not empty start decoding
+				if(preg_match('/^([a-zA-Z][a-zA-Z0-9]*([\=]([a-zA-Z0-9]+([\,][a-zA-Z0-9\-\_\.]+)?[\;]?)+)?[\/]?)+$/',$link)){ # Check link syntax
 					$link=explode('/',$link);
 					$subview_path='';
 					foreach($link as $key=>$subview){
@@ -55,10 +98,10 @@
 					} # foreach()
 				} # if()
 				else{
-					throw new RouterException('Incorrect link format');
+					throw new RouterException('Incorrect link format'); # Throw exception if link syntax is wrong
 				} # else
 
-				switch($mode){
+				switch($mode){ # Set global variables $_GET and $_POST after decoding
 					case self::ROUTER_GET:
 						$_GET=$array;
 						break;
@@ -71,7 +114,17 @@
 			} # if()
 		} # decodeLink()
 
-		public static function checkParams($rules,$mode=self::ROUTER_GET){
+		/*
+		 * @arg: (array) rules to check params
+		 * @arg^: (int) optional mode
+		 * @ret: (bool) true or false
+		 * @desc: Method returs true when params meet rules or false otherwise.
+		 */
+		public static function checkParams($rules,$mode=NULL){
+			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
+				$mode=self::$mode;
+			} # if()
+
 			switch($mode){
 				case self::ROUTER_GET:
 					$work_array=$_GET;
@@ -83,35 +136,381 @@
 					throw new RouterException('Unknown mode');
 			} # switch()
 
-			if(isset($work_array)){
+			if(empty($work_array)){
+				return TRUE;
+			} # if()
+			else{
 				$return=TRUE;
 
-				foreach($work_array as $path=>$params_array){
+				foreach($work_array as $path=>$params_array){ # Check each data in analyzes array
 					if(isset($rules[$path])&&!empty($params_array)){
 						$return&=self::validateArguments($rules[$path],$params_array);
 					} # if()
+
+					if($return==FALSE){ # Break if return value is false
+						break;
+					} # if()
 				} # foreach()
 				return $return;
-			} # if()
-			else{
-				return TRUE;
 			} # else
 		} # checkParams()
+
+		/*
+		 * @arg: (int) value to check
+		 * @ret: (bool) true or false
+		 * @desc: Method checks \p characteristic.
+		 */
+		private static function checkEmpty($value){
+			return empty($value);
+		} # checkEmpty()
+
+		/*
+		 * @arg: (int) value to check
+		 * @arg: (int) condition in characteristic
+		 * @ret: (bool) true or false
+		 * @desc: Method checks \b characteristic.
+		 */
+		private static function checkBoole($value,$data){
+			$value=intval($value);
+			if(empty($data)){
+				return ($value===0)||($value===1);
+			} # if()
+			else{
+				return $value===intval($data[1]);
+			} #else
+		} # checkBoole()
+
+		/*
+		 * @arg: (int) value to check
+		 * @arg: (int) conditions in characteristic
+		 * @ret: (bool) true or false
+		 * @desc: Method checks \n characteristic.
+		 */
+		private static function checkNatural($value,$data){
+			if(!empty($data[0])){
+				$value=self::convert($value,$data[0]);
+			} # if()
+
+			if(isset($data[1])){
+				switch($data[1]){
+					case '+':
+						return $value>0;
+						break;
+					case '<'.$data[3]:
+						return $value<$data[3];
+						break;
+					case '<='.$data[3]:
+						return $value<=$data[3];
+						break;
+					case '>'.$data[3]:
+						return $value>$data[3];
+						break;
+					case '>='.$data[3]:
+						return $value>=$data[3];
+						break;
+					case '='.$data[3]:
+						return $value==$data[3];
+						break;
+					default:
+						if(($data[3]!='n')&&($data[4]!='n'||$data[4]!='i'||$data[4]!='i+')){
+							switch($data[1]){
+								case '<'.$data[2].';'.$data[3].')':
+								case '('.$data[2].';'.$data[3].'>':
+								case '('.$data[2].';'.$data[3].')':
+									$condition=$data[2]>=$data[3];
+									break;
+								default:
+									$condition=$data[2]>$data[3];
+							} # switch()
+						} # if()
+						else{
+							$condition=TRUE;
+						} # else
+
+						if($condition){
+							switch($data[2]){
+								case '(':
+									return (($data[3]!='n'&&$data[3]<$value)||($data[3]=='n'));
+									break;
+								case '<':
+									return (($data[3]!='n'&&$data[3]<=$value)||($data[3]=='n'));
+									break;
+							} # switch()
+
+							switch($matches[5]){
+								case ')':
+									return (($matches[4]!='n'&&$matches[4]>$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
+									break;
+								case '>':
+									return (($matches[4]!='n'&&$matches[4]!='i'&&$matches[4]!='i+'&&$matches[4]>=$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
+									break;
+								} # switch()
+							} # if()
+							else{
+								throw new RouterException('Bad characteristics modification');
+							} # else
+				} # switch()
+			} # if()
+
+			return FALSE;
+		} # checkNatural()
+
+		/*
+		 * @arg: (int) value to check
+		 * @arg: (int) conditions in characteristic
+		 * @ret: (bool) true or false
+		 * @desc: Method checks \i characteristic.
+		 */
+		private static checkInteger($value,$data){
+			if(!empty($data[0])){
+				$value=self::convert($value,$data[0]);
+			} # if()
+
+			if(isset($data[1])){
+				switch($data[1]){
+					case '+':
+						return $value>0;
+						break;
+					case '-':
+						return $value<0;
+						break;
+					case '<'.$data[3]:
+						return $value<$data[3];
+						break;
+					case '<='.$data[3]:
+						return $value<=$data[3];
+						break;
+					case '>'.$data[3]:
+						return $value>$data[3];
+						break;
+					case '>='.$data[3]:
+						return $value>=$data[3];
+						break;
+					case '='.$data[3]:
+						return $value==$data[3];
+						break;
+					default:
+						if(($data[3]!='n'||$data[3]!='i-')&&($data[4]!='n'||$data[4]!='i'||$data[4]!='i+')){
+							switch($data[1]){
+								case '<'.$data[2].';'.$data[3].')':
+								case '('.$data[2].';'.$data[3].'>':
+								case '('.$data[2].';'.$data[3].')':
+									$condition=$data[2]>=$data[3];
+									break;
+								default:
+									$condition=$data[2]>$data[3];
+							} # switch()
+						} # if()
+						else{
+							$condition=TRUE;
+						} # else
+
+						if($condition){
+							switch($data[2]){
+								case '(':
+									return (($data[3]!='n'&&$data[3]!='i-'&&$data[3]<$value)||($data[3]=='n'||$data[3]=='i-'));
+									break;
+								case '<':
+									return (($data[3]!='n'&&$data[3]!='i-'&&$data[3]<=$value)||($data[3]=='n'||$data[3]=='i-'));
+									break;
+							} # switch()
+
+							switch($data[5]){
+								case ')':
+									return (($data[4]!='n'&&$data[4]>$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
+									break;
+								case '>':
+									return (($data[4]!='n'&&$data[4]!='i'&&$data[4]!='i+'&&$data[4]>=$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
+									break;
+							} # switch()
+						} # if()
+						else{
+							throw new RouterException('Bad characteristics modification');
+						} # else
+				} # switch()
+			} # if()
+
+			return FALSE;
+		} # checkInteger()
+
+		/*
+		 * @arg: (int) value to check
+		 * @arg: (int) conditions in characteristic
+		 * @ret: (bool) true or false
+		 * @desc: Method checks \f characteristic.
+		 */
+		private static function checkFloat($value,$data){
+			if(!empty($data[0])){
+				$value=self::convert($value,$data[0]);
+			} # if()
+
+			if(isset($data[1])){
+				switch($data[1]){
+					case '+':
+						$return&=$value>0;
+						break;
+					case '-':
+						$return&=$value<0;
+						break;
+					case '<'.$data[3]:
+						$return&=$value<$data[3];
+						break;
+					case '<='.$data[3]:
+						$return&=$value<=$data[3];
+						break;
+					case '>'.$data[3]:
+						$return&=$value>$data[3];
+						break;
+					case '>='.$data[3]:
+						$return&=$value>=$data[3];
+						break;
+					case '='.$data[3]:
+						$return&=$value==$data[3];
+						break;
+					default:
+						if(($data[3]!='n'||$data[3]!='i-')&&($data[4]!='n'||$data[4]!='i'||$data[4]!='i+')){
+							switch($data[1]){
+								case '<'.$data[2].';'.$data[3].')':
+								case '('.$data[2].';'.$data[3].'>':
+								case '('.$data[2].';'.$data[3].')':
+									$condition=$data[2]>=$data[3];
+									break;
+								default:
+									$condition=$data[2]>$data[3];
+							} # switch()
+						} # if()
+						else{
+							$condition=TRUE;
+						} # else
+
+						if($condition){
+							switch($data[2]){
+								case '(':
+									$return&=(($data[3]!='n'&&$data[3]!='i-'&&$data[3]<$value)||($data[3]=='n'||$data[3]=='i-'));
+									break;
+								case '<':
+									$return&=(($data[3]!='n'&&$data[3]!='i-'&&$data[3]<=$value)||($data[3]=='n'||$data[3]=='i-'));
+									break;
+							} # switch()
+
+							switch($data[5]){
+								case ')':
+									$return&=(($data[4]!='n'&&$data[4]>$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
+									break;
+								case '>':
+									$return&=(($data[4]!='n'&&$data[4]!='i'&&$data[4]!='i+'&&$data[4]>=$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
+									break;
+							} # switch()
+						} # if()
+						else{
+							throw new RouterException('Bad characteristics modification');
+						} # else
+				} # switch()
+			} # if()
+
+			return FALSE;
+		} # checkFloat()
+
+		/*
+		 * @arg: (int) value to check
+		 * @arg: (int) condition in characteristic
+		 * @ret: (bool) true or false
+		 * @desc: Method checks \c characteristic.
+		 */
+		private static function checkChar($value,$data){
+			if(empty($data)){
+				return strlen($value)==1;
+			} # if()
+			else{
+				return $data[1]==$value;
+			} # else
+		} # checkChar()
+
+		/*
+		 * @arg: (int) value to check
+		 * @arg: (int) conditions in characteristic
+		 * @ret: (bool) true or false
+		 * @desc: Method checks \s characteristic.
+		 */
+		private static function checkString($value,$data){
+			if(isset($data[1])){
+				switch($data[0]){
+					case ':'.$data[1]:
+						return $value==$data[1];
+						break;
+					case '+':
+						return strlen($value)>0;
+						break;
+					case '<'.$data[2]:
+						return strlen($value)<$data[2];
+						break;
+					case '<='.$data[2]:
+						return strlen($value)<=$data[2];
+						break;
+					case '>'.$data[2]:
+						return strlen($value)>$data[2];
+						break;
+					case '>='.$data[2]:
+						return strlen($value)>=$data[2];
+						break;
+					case '='.$data[2]:
+						return strlen($value)==$data[2];
+						break;
+					default:
+						if(($data[3]!='n')&&($data[4]!='n'||$data[4]!='i'||$data[4]!='i+')){
+							switch($data[1]){
+								case '<'.$data[2].';'.$data[3].')':
+								case '('.$data[2].';'.$data[3].'>':
+								case '('.$data[2].';'.$data[3].')':
+									$condition=$data[2]>=$data[3];
+									break;
+								default:
+									$condition=$data[2]>$data[3];
+							} # switch()
+						} # if()
+						else{
+							$condition=TRUE;
+						} # else
+
+						if($condition){
+							$strlen=strlen($value);
+							switch($data[1]){
+								case '(':
+									return (($data[2]!='n'&&$data[2]<$strlen)||($data[2]=='n'));
+									break;
+								case '<':
+									return (($data[2]!='n'&&$data[2]<=$strlen)||($data[2]=='n'));
+									break;
+							} # switch()
+
+							switch($data[4]){
+								case ')':
+									return (($data[3]!='n'&&$data[3]>$strlen)||($data[3]=='n'||$data[3]=='i'||$data[3]=='i+'));
+									break;
+								case '>':
+									return (($data[3]!='n'&&$data[3]!='i'&&$data[3]!='i+'&&$data[3]>=$strlen)||($data[3]=='n'||$data[3]=='i'||$data[3]=='i+'));
+									break;
+							} # switch()
+						} # if()
+						else{
+							throw new RouterException('Bad characteristics modification');
+						} # else
+				} # switch()
+			} # if()
+
+			return FALSE;
+		} # checkString()
 
 		private static function validateArguments($rules,$params){
 			$return=TRUE;
 
 			foreach($params as $name=>$value){
-				if($return==FALSE){
-					break;
-				} # if()
-
 				if(isset($rules[$name])){
 					$characteristic=substr($rules[$name],1,1);
 					switch($characteristic){
 						case 'p':
 							if($rules[$name]==='\p'){
-								$return&=empty($value);
+								$return&=self::checkEmpty($value);
 							} # if()
 							else{
 								$return&=FALSE;
@@ -120,13 +519,7 @@
 							break;
 						case 'b':
 							if(reg_match('/^\\\\b(\=([01]))?$/',$rules[$name],$matches)){
-								$value=intval($value);
-								if(!empty($matches)){
-									$return&=$value===intval($matches[1]);
-								} # if()
-								else{
-									$return&=($value===0||$value===1);
-								} #else
+								$return&=self::checkBoole($value,$matches);
 							} # if()
 							else{
 								$return&=FALSE;
@@ -136,70 +529,7 @@
 						case 'n':
 							if(reg_match('/^\\\\n([oh]?)([+]|(\()([0-9]+|n)\;([0-9]+|i[+]?|n)(\))|(\<)([0-9]+)\;([0-9]+|i[+]?|n)(\))|(\()([0-9]+|n)\;([0-9]+)(\>)|(\<)([0-9]+)\;([0-9]+)(\>)|([\>\<][\=]?|[\=])([0-9]+))?$/',substr($rules[$name],0),$matches)){
 								if($value>=0){
-									if(!empty($matches[0])){
-										$value=self::convert($value,$matches[0]);
-									} # if()
-
-									if(isset($matches[1])){
-										switch($matches[1]){
-											case '+':
-												$return&=$value>0;
-												break;
-											case '<'.$matches[3]:
-												$return&=$value<$matches[3];
-												break;
-											case '<='.$matches[3]:
-												$return&=$value<=$matches[3];
-												break;
-											case '>'.$matches[3]:
-												$return&=$value>$matches[3];
-												break;
-											case '>='.$matches[3]:
-												$return&=$value>=$matches[3];
-												break;
-											case '='.$matches[3]:
-												$return&=$value==$matches[3];
-												break;
-											default:
-												if(($matches[3]!='n')&&($matches[4]!='n'||$matches[4]!='i'||$matches[4]!='i+')){
-													switch($matches[1]){
-														case '<'.$matches[2].';'.$matches[3].')':
-														case '('.$matches[2].';'.$matches[3].'>':
-														case '('.$matches[2].';'.$matches[3].')':
-															$condition=$matches[2]>=$matches[3];
-															break;
-														default:
-															$condition=$matches[2]>$matches[3];
-													} # switch()
-												} # if()
-												else{
-													$condition=TRUE;
-												} # else
-
-												if($condition){
-													switch($matches[2]){
-														case '(':
-															$return&=(($matches[3]!='n'&&$matches[3]<$value)||($matches[3]=='n'));
-															break;
-														case '<':
-															$return&=(($matches[3]!='n'&&$matches[3]<=$value)||($matches[3]=='n'));
-															break;
-													} # switch()
-
-													switch($matches[5]){
-														case ')':
-															$return&=(($matches[4]!='n'&&$matches[4]>$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-															break;
-														case '>':
-															$return&=(($matches[4]!='n'&&$matches[4]!='i'&&$matches[4]!='i+'&&$matches[4]>=$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-															break;
-													} # switch()
-												} # if()
-												else{
-													throw new RouterException('Bad characteristics modification');
-												} # else
-										} # switch()
-									} # if()
+									$return&=self::checkNatural($value,$matches);
 								} # if()
 								else{
 									$return&=FALSE;
@@ -212,73 +542,7 @@
 							break;
 						case 'i':
 							if(reg_match('/^\\\\i([oh]?)([+-]|(\()([-]?[0-9]+|n|i-)\;([-]?[0-9]+|i[+]?|n)(\))|(\<)([-]?[0-9]+)\;([-]?[0-9]+|i[+]?|n)(\))|(\()([-]?[0-9]+|n|i-)\;([-]?[0-9]+)(\>)|(\<)([-]?[0-9]+)\;([-]?[0-9]+)(\>)|([\>\<][\=]?|[\=])([-]?[0-9]+))?$/',substr($rules[$name],0),$matches)){
-								if(!empty($matches[0])){
-									$value=self::convert($value,$matches[0]);
-								} # if()
-
-								if(isset($matches[1])){
-									switch($matches[1]){
-										case '+':
-											$return&=$value>0;
-											break;
-										case '-':
-											$return&=$value<0;
-											break;
-										case '<'.$matches[3]:
-											$return&=$value<$matches[3];
-											break;
-										case '<='.$matches[3]:
-											$return&=$value<=$matches[3];
-											break;
-										case '>'.$matches[3]:
-											$return&=$value>$matches[3];
-											break;
-										case '>='.$matches[3]:
-											$return&=$value>=$matches[3];
-											break;
-										case '='.$matches[3]:
-											$return&=$value==$matches[3];
-											break;
-										default:
-											if(($matches[3]!='n'||$matches[3]!='i-')&&($matches[4]!='n'||$matches[4]!='i'||$matches[4]!='i+')){
-												switch($matches[1]){
-													case '<'.$matches[2].';'.$matches[3].')':
-													case '('.$matches[2].';'.$matches[3].'>':
-													case '('.$matches[2].';'.$matches[3].')':
-														$condition=$matches[2]>=$matches[3];
-														break;
-													default:
-														$condition=$matches[2]>$matches[3];
-												} # switch()
-											} # if()
-											else{
-												$condition=TRUE;
-											} # else
-
-											if($condition){
-												switch($matches[2]){
-													case '(':
-														$return&=(($matches[3]!='n'&&$matches[3]!='i-'&&$matches[3]<$value)||($matches[3]=='n'||$matches[3]=='i-'));
-														break;
-													case '<':
-														$return&=(($matches[3]!='n'&&$matches[3]!='i-'&&$matches[3]<=$value)||($matches[3]=='n'||$matches[3]=='i-'));
-														break;
-												} # switch()
-
-												switch($matches[5]){
-													case ')':
-														$return&=(($matches[4]!='n'&&$matches[4]>$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-														break;
-													case '>':
-														$return&=(($matches[4]!='n'&&$matches[4]!='i'&&$matches[4]!='i+'&&$matches[4]>=$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-														break;
-												} # switch()
-											} # if()
-											else{
-												throw new RouterException('Bad characteristics modification');
-											} # else
-									} # switch()
-								} # if()
+								$return&=self::checkInteger($value,$matches);
 							} # if()
 							else{
 								$return&=FALSE;
@@ -287,73 +551,7 @@
 							break;
 						case 'f':
 							if(reg_match('/^\\\\f([oh]?)([+-]|(\()([-]?[0-9]+(\.[0-9]+)?|n|i-)\;([-]?[0-9]+(\.[0-9]+)?|i[+]?|n)(\))|(\<)([-]?[0-9]+(\.[0-9]+)?)\;([-]?[0-9]+(\.[0-9]+)?|i[+]?|n)(\))|(\()([-]?[0-9]+(\.[0-9]+)?|n|i-)\;([-]?[0-9]+(\.[0-9]+)?)(\>)|(\<)([-]?[0-9]+(\.[0-9]+)?)\;([-]?[0-9]+(\.[0-9]+)?)(\>)|([\>\<][\=]?|[\=])([-]?[0-9]+(\.[0-9]+)?))?$/',substr($rules[$name],0),$matches)){
-								if(!empty($matches[0])){
-									$value=self::convert($value,$matches[0]);
-								} # if()
-
-								if(isset($matches[1])){
-									switch($matches[1]){
-										case '+':
-											$return&=$value>0;
-											break;
-										case '-':
-											$return&=$value<0;
-											break;
-										case '<'.$matches[3]:
-											$return&=$value<$matches[3];
-											break;
-										case '<='.$matches[3]:
-											$return&=$value<=$matches[3];
-											break;
-										case '>'.$matches[3]:
-											$return&=$value>$matches[3];
-											break;
-										case '>='.$matches[3]:
-											$return&=$value>=$matches[3];
-											break;
-										case '='.$matches[3]:
-											$return&=$value==$matches[3];
-											break;
-										default:
-											if(($matches[3]!='n'||$matches[3]!='i-')&&($matches[4]!='n'||$matches[4]!='i'||$matches[4]!='i+')){
-												switch($matches[1]){
-													case '<'.$matches[2].';'.$matches[3].')':
-													case '('.$matches[2].';'.$matches[3].'>':
-													case '('.$matches[2].';'.$matches[3].')':
-														$condition=$matches[2]>=$matches[3];
-														break;
-													default:
-														$condition=$matches[2]>$matches[3];
-												} # switch()
-											} # if()
-											else{
-												$condition=TRUE;
-											} # else
-
-											if($condition){
-												switch($matches[2]){
-													case '(':
-														$return&=(($matches[3]!='n'&&$matches[3]!='i-'&&$matches[3]<$value)||($matches[3]=='n'||$matches[3]=='i-'));
-														break;
-													case '<':
-														$return&=(($matches[3]!='n'&&$matches[3]!='i-'&&$matches[3]<=$value)||($matches[3]=='n'||$matches[3]=='i-'));
-														break;
-												} # switch()
-
-												switch($matches[5]){
-													case ')':
-														$return&=(($matches[4]!='n'&&$matches[4]>$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-														break;
-													case '>':
-														$return&=(($matches[4]!='n'&&$matches[4]!='i'&&$matches[4]!='i+'&&$matches[4]>=$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-														break;
-												} # switch()
-											} # if()
-											else{
-												throw new RouterException('Bad characteristics modification');
-											} # else
-									} # switch()
-								} # if()
+								$return&=self::checkFloat($value,$matches);
 							} # if()
 							else{
 								$return&=FALSE;
@@ -362,12 +560,7 @@
 							break;
 						case 'c':
 							if(reg_match('/^\\\\c([:](.))?$/',$rules[$name],$matches)){
-								if(empty($matches)){
-									$return&=strlen($value)==1;
-								} # if()
-								else{
-									$return&=$matches[1]==$value;
-								} # else
+								$return&=self::checkChar($value,$matches);
 							} # if()
 							else{
 								$return&=FALSE;
@@ -376,70 +569,7 @@
 							break;
 						case 's':
 							if(reg_match('/^\\\\s([:](.*)|(\()([0-9]+|n)\;([0-9]+|i[+]?|n)(\))|(\<)([0-9]+)\;([0-9]+|i[+]?|n)(\))|(\()([0-9]+|n)\;([0-9]+)(\>)|(\<)([0-9]+)\;([0-9]+)(\>)|([\>\<][\=]?|[\=])([0-9]+))?$/',$rules[$name],$matches)){
-								if(isset($matches[1])){
-									switch($matches[0]){
-										case ':'.$matches[1]:
-											$return&=$value==$matches[1];
-											break;
-										case '+':
-											$return&=strlen($value)>0;
-											break;
-										case '<'.$matches[2]:
-											$return&=strlen($value)<$matches[2];
-											break;
-										case '<='.$matches[2]:
-											$return&=strlen($value)<=$matches[2];
-											break;
-										case '>'.$matches[2]:
-											$return&=strlen($value)>$matches[2];
-											break;
-										case '>='.$matches[2]:
-											$return&=strlen($value)>=$matches[2];
-											break;
-										case '='.$matches[2]:
-											$return&=strlen($value)==$matches[2];
-											break;
-										default:
-											if(($matches[3]!='n')&&($matches[4]!='n'||$matches[4]!='i'||$matches[4]!='i+')){
-												switch($matches[1]){
-													case '<'.$matches[2].';'.$matches[3].')':
-													case '('.$matches[2].';'.$matches[3].'>':
-													case '('.$matches[2].';'.$matches[3].')':
-														$condition=$matches[2]>=$matches[3];
-														break;
-													default:
-														$condition=$matches[2]>$matches[3];
-												} # switch()
-											} # if()
-											else{
-												$condition=TRUE;
-											} # else
-
-											if($condition){
-												$strlen=strlen($value);
-												switch($matches[1]){
-													case '(':
-														$return&=(($matches[2]!='n'&&$matches[2]<$strlen)||($matches[2]=='n'));
-														break;
-													case '<':
-														$return&=(($matches[2]!='n'&&$matches[2]<=$strlen)||($matches[2]=='n'));
-														break;
-												} # switch()
-
-												switch($matches[4]){
-													case ')':
-														$return&=(($matches[3]!='n'&&$matches[3]>$strlen)||($matches[3]=='n'||$matches[3]=='i'||$matches[3]=='i+'));
-														break;
-													case '>':
-														$return&=(($matches[3]!='n'&&$matches[3]!='i'&&$matches[3]!='i+'&&$matches[3]>=$strlen)||($matches[3]=='n'||$matches[3]=='i'||$matches[3]=='i+'));
-														break;
-												} # switch()
-											} # if()
-											else{
-												throw new RouterException('Bad characteristics modification');
-											} # else
-									} # switch()
-								} # if()
+								$return&=self::checkString($value,$matches);
 							} # if()
 							else{
 								$return&=FALSE;
@@ -450,11 +580,21 @@
 							throw new RouterException('Unknown characteristics');
 					} # switch()
 				} # if()
+
+				if($return==FALSE){ # Break loop if return value is false
+					break;
+				} # if()
 			} # foreach()
 
 			return $return;
 		} # validateArguments()
 
+		/*
+		 * @arg: (mixed) number to convert
+		 * @arg: (char) convert mode
+		 * @ret: (int) converted value
+		 * @desc: Method converts sent data to decimal number from octal or hexadecimal.
+		 */
 		private static function convert($number,$mode){
 			switch($mode){
 				case 'o':
@@ -466,7 +606,17 @@
 			} # switch()
 		} # convert()
 
-		public static function page($name,$mode=self::ROUTER_GET){
+		/*
+		 * @arg: (string) page  name
+		 * @arg^: (int) mode
+		 * @ret: (bool) true or false
+		 * @desc: Method checks sent page - if is available now then return true, false otherwise.
+		 */
+		public static function page($name,$mode=NULL){
+			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
+				$mode=self::$mode;
+			} # if()
+
 			$name=preg_replace(
 				array(
 					'/[\/]+/',
@@ -493,7 +643,17 @@
 			} # switch()
 		} # page()
 
-		public static function pageonly($name,$mode=self::ROUTER_GET){
+		/*
+		 * @arg: (string) page  name
+		 * @arg^: (int) mode
+		 * @ret: (bool) true or false
+		 * @desc: Method checks sent page - if is available now then return true, false otherwise. Level must be the same!
+		 */
+		public static function pageonly($name,$mode=NULL){
+			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
+				$mode=self::$mode;
+			} # if()
+
 			$name=preg_replace(
 				array(
 					'/[\/]+/',
@@ -522,6 +682,10 @@
 			} # switch()
 		} # pageonly()
 
+		/*
+		 * @arg&: (string) base to edit
+		 * @desc: Method edits sent base by deleting multiple slashes.
+		 */
 		private static function editbase(&$base){
 			if(empty($base)){
 				$base=$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
@@ -543,12 +707,23 @@
 			} # else
 		} # editbase()
 
+		/*
+		 * @arg^: (string) base
+		 * @ret: (int) base number
+		 * @desc: Method count base level.
+		 */
 		public static function countbase($base=NULL){
 			self::editbase($base);	
 			$base=explode('/',$base);
 			return count($base)-1;
 		} # countbase()
 
+		/*
+		 * @arg: (string) characteristics to create link
+		 * @arg^: (string) base
+		 * @ret: (string) generated link
+		 * @desc: Method generates link.
+		 */
 		public static function link($string,$base=NULL){
 			if(reg_match('/^(\&|(\%)([!]{0,2}))?([0-9]*)?(.*?)(\*)?(?:\[(.*)\])?$/',$string,$matches)){ 
 				self::editbase($base);
@@ -712,11 +887,24 @@
 			} # if()
 		} # link()
 
+		/*
+		 * @arg: (string) content to 'a' HTML element
+		 * @arg: (string) characteristics to create link
+		 * @arg: (array) attributes to 'a' HTML element
+		 * @arg^: (string) base
+		 * @ret: (string) generated link
+		 * @desc: Method generates HTML link.
+		 */
 		public static function htmllink($content,$string,$attributes=array(),$base=NULL){
 			if(!empty($attributes)){
 				$attr='';
 				foreach($attributes as $name=>$value){
-					$attr.=' '.$name.'="'.$value.'"';
+					if(empty($value)){
+						$attr.=' '.$name;
+					}
+					else{
+						$attr.=' '.$name.'="'.$value.'"';
+					}
 				} # foreach()
 			} # if()
 
