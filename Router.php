@@ -2,6 +2,7 @@
 	namespace ventaquil;
 
 	abstract class Router implements router_interface {
+		private $custom_array=array(); # Array to CUSTOM mode
 		private $mode=self::ROUTER_GET; # Current Router mode
 
 		/*
@@ -25,7 +26,7 @@
 		 * @desc: Method checks sent mode and if it's correct return true, false otherwise.
 		 */
 		private static function checkMode($mode){
-			if(($mode==self::ROUTER_GET)||($mode==self::ROUTER_POST)){
+			if(($mode==self::ROUTER_GET)||($mode==self::ROUTER_POST)||($mode==self::ROUTER_CUSTOM)){
 				return TRUE;
 			} # if()
 			else{
@@ -36,9 +37,10 @@
 		/*
 		 * @arg: (string) link to decode
 		 * @arg^: (int) mode which link will be decoded, default NULL
+		 * @arg&^: (array) return array to CUSTOM mode
 		 * @desc: Method decode sent link.
 		 */
-		public static function decodeLink($link,$mode=NULL){
+		public static function decodeLink($link,$mode=NULL,&$custom_array=array()){
 			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
 				$mode=self::$mode;
 			} # if()
@@ -108,11 +110,22 @@
 					case self::ROUTER_POST:
 						$_POST=$array;
 						break;
+					case self::ROUTER_CUSTOM:
+						self::$custom_array=$custom_array=$array;
+						break;
 					default:
 						throw new RouterException('Unknown mode');
 				} # switch()
 			} # if()
 		} # decodeLink()
+
+		/*
+		 * @ret: (array) custom array from $custom_array private variable
+		 * @desc: Method returns custom array.
+		 */
+		public static function getCustom(){
+			return self::$custom_array;
+		} # getCustom()
 
 		/*
 		 * @arg: (array) rules to check params
@@ -131,6 +144,9 @@
 					break;
 				case self::ROUTER_POST:
 					$work_array=$_POST;
+					break;
+				case self::ROUTER_CUSTOM:
+					$work_array=self::getCustom();
 					break;
 				default:
 					throw new RouterException('Unknown mode');
@@ -638,6 +654,9 @@
 				case self::ROUTER_POST:
 					return array_key_exists($name,$_POST);
 					break;
+				case self::ROUTER_CUSTOM:
+					return array_key_exists($name,self::getCustom());
+					break;
 				default:
 					throw new RouterException('Unknown mode');
 			} # switch()
@@ -675,6 +694,10 @@
 					break;
 				case self::ROUTER_POST:
 					$keys=array_keys($_POST);
+					return $keys[count($keys)-1]==$name;
+					break;
+				case self::ROUTER_CUSTOM:
+					$keys=array_keys(self::getCustom());
 					return $keys[count($keys)-1]==$name;
 					break;
 				default:
