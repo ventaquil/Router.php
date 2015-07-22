@@ -2,8 +2,8 @@
 	namespace ventaquil;
 
 	abstract class Router implements router_interface {
-		private $custom_array=array(); # Array to CUSTOM mode
-		private $mode=self::ROUTER_GET; # Current Router mode
+		private static $custom_array=array(); # Array to CUSTOM mode
+		private static $mode=self::ROUTER_GET; # Current Router mode
 
 		/*
 		 * @arg: (int) new Router mode
@@ -277,7 +277,7 @@
 		 * @ret: (bool) true or false
 		 * @desc: Method checks \i characteristic.
 		 */
-		private static checkInteger($value,$data){
+		private static function checkInteger($value,$data){
 			if(!empty($data[0])){
 				$value=self::convert($value,$data[0]);
 			} # if()
@@ -690,19 +690,23 @@
 			switch($mode){
 				case self::ROUTER_GET:
 					$keys=array_keys($_GET);
-					return $keys[count($keys)-1]==$name;
 					break;
 				case self::ROUTER_POST:
 					$keys=array_keys($_POST);
-					return $keys[count($keys)-1]==$name;
 					break;
 				case self::ROUTER_CUSTOM:
 					$keys=array_keys(self::getCustom());
-					return $keys[count($keys)-1]==$name;
 					break;
 				default:
 					throw new RouterException('Unknown mode');
 			} # switch()
+
+			if(!empty($keys)){
+				return $keys[count($keys)-1]==$name;
+			} # if()
+			else{
+				return FALSE;
+			} # else
 		} # pageonly()
 
 		/*
