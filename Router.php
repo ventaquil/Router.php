@@ -3,7 +3,23 @@
 
 	abstract class Router implements router_interface {
 		private static $custom_array=array(); # Array to CUSTOM mode
+		private static $exception_mode=FALSE; # When is true Router execute exceptions
 		private static $mode=self::ROUTER_GET; # Current Router mode
+
+		/*
+		 * @arg: (bool) new mode
+		 * @ret: (bool) true or false
+		 * @desc: Method returns true when mode changed successful, false otherwise.
+		 */
+		public static function setExceptionMode($mode){
+			if(($mode==TRUE)||($mode==FALSE)){
+				self::$exception_mode=$mode;
+				return TRUE;
+			} # if()
+			else{
+				return FALSE;
+			} # else
+		} # setExceptionMode()
 
 		/*
 		 * @arg: (int) new Router mode
@@ -45,7 +61,7 @@
 				$mode=self::$mode;
 			} # if()
 			elseif(!self::checkMode($mode)){ # If mode not correctly throw exception
-				throw new RouterException('Unknown mode');
+				self::runException('Unknown mode');
 			} # elseif()
 
 			$array=array();
@@ -100,7 +116,7 @@
 					} # foreach()
 				} # if()
 				else{
-					throw new RouterException('Incorrect link format'); # Throw exception if link syntax is wrong
+					self::runException('Incorrect link format'); # Throw exception if link syntax is wrong
 				} # else
 
 				switch($mode){ # Set global variables $_GET and $_POST after decoding
@@ -114,7 +130,7 @@
 						self::$custom_array=$custom_array=$array;
 						break;
 					default:
-						throw new RouterException('Unknown mode');
+						self::runException('Unknown mode');
 				} # switch()
 			} # if()
 		} # decodeLink()
@@ -149,7 +165,7 @@
 					$work_array=self::getCustom();
 					break;
 				default:
-					throw new RouterException('Unknown mode');
+					self::runException('Unknown mode');
 			} # switch()
 
 			if(empty($work_array)){
@@ -263,12 +279,12 @@
 								} # switch()
 							} # if()
 							else{
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 				} # switch()
 			} # if()
 
-			return FALSE;
+			return TRUE;
 		} # checkNatural()
 
 		/*
@@ -341,12 +357,12 @@
 							} # switch()
 						} # if()
 						else{
-							throw new RouterException('Bad characteristics modification');
+							self::runException('Bad characteristics modification');
 						} # else
 				} # switch()
 			} # if()
 
-			return FALSE;
+			return TRUE;
 		} # checkInteger()
 
 		/*
@@ -419,12 +435,12 @@
 							} # switch()
 						} # if()
 						else{
-							throw new RouterException('Bad characteristics modification');
+							self::runException('Bad characteristics modification');
 						} # else
 				} # switch()
 			} # if()
 
-			return FALSE;
+			return TRUE;
 		} # checkFloat()
 
 		/*
@@ -509,12 +525,12 @@
 							} # switch()
 						} # if()
 						else{
-							throw new RouterException('Bad characteristics modification');
+							self::runException('Bad characteristics modification');
 						} # else
 				} # switch()
 			} # if()
 
-			return FALSE;
+			return TRUE;
 		} # checkString()
 
 		private static function validateArguments($rules,$params){
@@ -530,7 +546,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 							break;
 						case 'b':
@@ -539,7 +555,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 							break;
 						case 'n':
@@ -553,7 +569,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 							break;
 						case 'i':
@@ -562,7 +578,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 							break;
 						case 'f':
@@ -571,7 +587,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 							break;
 						case 'c':
@@ -580,7 +596,7 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 							break;
 						case 's':
@@ -589,11 +605,11 @@
 							} # if()
 							else{
 								$return&=FALSE;
-								throw new RouterException('Bad characteristics modification');
+								self::runException('Bad characteristics modification');
 							} # else
 							break;
 						default:
-							throw new RouterException('Unknown characteristics');
+							self::runException('Unknown characteristics');
 					} # switch()
 				} # if()
 
@@ -618,7 +634,7 @@
 				case 'h':
 					return hexdec($number);
 				default:
-					throw new RouterException('Unknown mode');
+					self::runException('Unknown mode');
 			} # switch()
 		} # convert()
 
@@ -658,7 +674,7 @@
 					return array_key_exists($name,self::getCustom());
 					break;
 				default:
-					throw new RouterException('Unknown mode');
+					self::runException('Unknown mode');
 			} # switch()
 		} # page()
 
@@ -698,7 +714,7 @@
 					$keys=array_keys(self::getCustom());
 					break;
 				default:
-					throw new RouterException('Unknown mode');
+					self::runException('Unknown mode');
 			} # switch()
 
 			if(!empty($keys)){
@@ -767,7 +783,7 @@
 
 							if(empty($matches[3])){
 								if(isset($matches[4])){
-									throw new RouterException('Bad characteristics modification');
+									self::runException('Bad characteristics modification');
 								} # if()
 
 								for($a=0,$b=count($base);$a<$b;$a++){
@@ -907,7 +923,7 @@
 							} # else
 						} # if()
 						else{
-							throw new RouterException('Incorrect link format');
+							self::runException('Incorrect link format');
 						} # else
 						break;
 				} # switch()
@@ -937,6 +953,16 @@
 
 			return '<a href="'.self::link($string,$base).'"'.((isset($attr))?$attr:NULL).'>'.$content.'</a>';
 		} # htmllink()
+
+		/*
+		 * @arg: (string) message text
+		 * @desc: Method runs exception when $exception_mode is true.
+		 */
+		private static function runException($message){
+			if(self::$exception_mode){
+				throw new RouterException($message);
+			} # if()
+		} # runException()
 	} # Router
 
 	class RouterException extends \Exception {};

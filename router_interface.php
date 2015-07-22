@@ -19,4 +19,6 @@
 		public static function htmllink($content,$string,$attributes,$base);
 
 		public static function getCustom();
+
+		public static function setExceptionMode($mode);
 	} # router_interface
