@@ -3,6 +3,11 @@
 
 	abstract class Router implements router_interface {
 		private static $custom_array=array(); # Array to CUSTOM mode
+		private static $decoded=[ # For every mode start value is false
+			self::ROUTER_GET=>FALSE,
+			self::ROUTER_POST=>FALSE,
+			self::ROUTER_CUSTOM=>FALSE,
+		]; # $decoded
 		private static $exception_mode=FALSE; # When is true Router execute exceptions
 		private static $mode=self::ROUTER_GET; # Current Router mode
 
@@ -129,10 +134,10 @@
 					case self::ROUTER_CUSTOM:
 						self::$custom_array=$custom_array=$array;
 						break;
-					default:
-						self::runException('Unknown mode');
 				} # switch()
 			} # if()
+
+			self::$decoded[$mode]=TRUE;
 		} # decodeLink()
 
 		/*
@@ -153,37 +158,43 @@
 			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
 				$mode=self::$mode;
 			} # if()
+			elseif(!self::checkMode($mode)){
+				self::runException('Unknown mode');
+			} # elseif()
 
-			switch($mode){
-				case self::ROUTER_GET:
-					$work_array=$_GET;
-					break;
-				case self::ROUTER_POST:
-					$work_array=$_POST;
-					break;
-				case self::ROUTER_CUSTOM:
-					$work_array=self::getCustom();
-					break;
-				default:
-					self::runException('Unknown mode');
-			} # switch()
+			if(self::$decoded[$mode]){
+				switch($mode){
+					case self::ROUTER_GET:
+						$work_array=$_GET;
+						break;
+					case self::ROUTER_POST:
+						$work_array=$_POST;
+						break;
+					case self::ROUTER_CUSTOM:
+						$work_array=self::getCustom();
+						break;
+				} # switch()
 
-			if(empty($work_array)){
-				return TRUE;
+				if(empty($work_array)){
+					return TRUE;
+				} # if()
+				else{
+					$return=TRUE;
+
+					foreach($work_array as $path=>$params_array){ # Check each data in analyzes array
+						if(isset($rules[$path])&&!empty($params_array)){
+							$return&=self::validateArguments($rules[$path],$params_array);
+						} # if()
+
+						if($return==FALSE){ # Break if return value is false
+							break;
+						} # if()
+					} # foreach()
+					return $return;
+				} # else
 			} # if()
 			else{
-				$return=TRUE;
-
-				foreach($work_array as $path=>$params_array){ # Check each data in analyzes array
-					if(isset($rules[$path])&&!empty($params_array)){
-						$return&=self::validateArguments($rules[$path],$params_array);
-					} # if()
-
-					if($return==FALSE){ # Break if return value is false
-						break;
-					} # if()
-				} # foreach()
-				return $return;
+				self::runException('Execute decodeLink() before run this method');
 			} # else
 		} # checkParams()
 
@@ -648,34 +659,40 @@
 			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
 				$mode=self::$mode;
 			} # if()
+			elseif(!self::checkMode($mode)){
+				self::runException('Unknown mode');
+			} # elseif()
 
-			$name=preg_replace(
-				array(
-					'/[\/]+/',
-					'/^[\/]/',
-					'/[\/]$/'
-				), # array()
-				array(
-					'/',
-					NULL,
-					NULL
-				), # array()
-				$name
-			); # $name
+			if(self::$decoded[$mode]){
+				$name=preg_replace(
+					array(
+						'/[\/]+/',
+						'/^[\/]/',
+						'/[\/]$/'
+					), # array()
+					array(
+						'/',
+						NULL,
+						NULL
+					), # array()
+					$name
+				); # $name
 
-			switch($mode){
-				case self::ROUTER_GET:
-					return array_key_exists($name,$_GET);
-					break;
-				case self::ROUTER_POST:
-					return array_key_exists($name,$_POST);
-					break;
-				case self::ROUTER_CUSTOM:
-					return array_key_exists($name,self::getCustom());
-					break;
-				default:
-					self::runException('Unknown mode');
-			} # switch()
+				switch($mode){
+					case self::ROUTER_GET:
+						return array_key_exists($name,$_GET);
+						break;
+					case self::ROUTER_POST:
+						return array_key_exists($name,$_POST);
+						break;
+					case self::ROUTER_CUSTOM:
+						return array_key_exists($name,self::getCustom());
+						break;
+				} # switch()
+			} # if()
+			else{
+				self::runException('Execute decodeLink() before run this method');
+			} # else
 		} # page()
 
 		/*
@@ -688,40 +705,47 @@
 			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
 				$mode=self::$mode;
 			} # if()
+			elseif(!self::checkMode($mode)){
+				self::runException('Unknown mode');
+			} # elseif()
 
-			$name=preg_replace(
-				array(
-					'/[\/]+/',
-					'/^[\/]/',
-					'/[\/]$/'
-				), # array()
-				array(
-					'/',
-					NULL,
-					NULL
-				), # array()
-				$name
-			); # $name
+			if(self::$decoded[$mode]){
+				$name=preg_replace(
+					array(
+						'/[\/]+/',
+						'/^[\/]/',
+						'/[\/]$/'
+					), # array()
+					array(
+						'/',
+						NULL,
+						NULL
+					), # array()
+					$name
+				); # $name
 
-			switch($mode){
-				case self::ROUTER_GET:
-					$keys=array_keys($_GET);
-					break;
-				case self::ROUTER_POST:
-					$keys=array_keys($_POST);
-					break;
-				case self::ROUTER_CUSTOM:
-					$keys=array_keys(self::getCustom());
-					break;
-				default:
-					self::runException('Unknown mode');
-			} # switch()
+				switch($mode){
+					case self::ROUTER_GET:
+						$keys=array_keys($_GET);
+						break;
+					case self::ROUTER_POST:
+						$keys=array_keys($_POST);
+						break;
+					case self::ROUTER_CUSTOM:
+						$keys=array_keys(self::getCustom());
+						break;
+				} # switch()
 
-			if(!empty($keys)){
-				return $keys[count($keys)-1]==$name;
+				if(!empty($keys)){
+					return $keys[count($keys)-1]==$name;
+				} # if()
+				else{
+					return $name==NULL;
+				} # else
 			} # if()
 			else{
 				return FALSE;
+				self::runException('Execute decodeLink() before run this method');
 			} # else
 		} # pageonly()
 
