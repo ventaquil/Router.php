@@ -89,3 +89,10 @@ or
 			} # elseif()
 		} # if()
 ```
+
+###Object mode
+```php
+		Router::setObjectMode(TRUE);
+		Router::decodeLink($_SERVER['REQUEST_URI']);
+		var_dump($_GET); // ventaquil\RouterObject
+```

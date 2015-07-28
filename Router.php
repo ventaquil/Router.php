@@ -2,6 +2,7 @@
 	namespace ventaquil;
 
 	abstract class Router implements router_interface {
+		private static $as_object=FALSE; # Return data as objects
 		private static $custom_array=array(); # Array to CUSTOM mode
 		private static $decoded=[ # For every mode start value is false
 			self::ROUTER_GET=>FALSE,
@@ -25,6 +26,14 @@
 				return FALSE;
 			} # else
 		} # setExceptionMode()
+
+		/*
+		 * @arg: (bool) new mode
+		 * @desc: Method set new mode when true sent.
+		 */
+		public static function setObjectMode($mode){
+			self::$as_object=($mode==TRUE) ? TRUE : FALSE;
+		} # setObjectMode()
 
 		/*
 		 * @arg: (int) new Router mode
@@ -124,6 +133,10 @@
 					self::runException('Incorrect link format'); # Throw exception if link syntax is wrong
 				} # else
 
+				if(self::$as_object){
+					$array=new RouterObject($array);
+				} # if()
+
 				switch($mode){ # Set global variables $_GET and $_POST after decoding
 					case self::ROUTER_GET:
 						$_GET=$array;
@@ -136,6 +149,23 @@
 						break;
 				} # switch()
 			} # if()
+			else{
+				if(self::$as_object){
+					$array=new RouterObject($array);
+				} # if()
+
+				switch($mode){ # Set global variables $_GET and $_POST after decoding
+					case self::ROUTER_GET:
+						$_GET=$array;
+						break;
+					case self::ROUTER_POST:
+						$_POST=$array;
+						break;
+					case self::ROUTER_CUSTOM:
+						self::$custom_array=$custom_array=$array;
+						break;
+				} # switch()
+			} # else
 
 			self::$decoded[$mode]=TRUE;
 		} # decodeLink()
@@ -179,6 +209,11 @@
 					return TRUE;
 				} # if()
 				else{
+					if(is_object($work_array)){
+						$work_array=$work_array->params();
+					} # if()
+					echo '<pre>'.print_r($work_array,true).'</pre>';
+
 					$return=TRUE;
 
 					foreach($work_array as $path=>$params_array){ # Check each data in analyzes array
@@ -678,17 +713,32 @@
 					$name
 				); # $name
 
-				switch($mode){
-					case self::ROUTER_GET:
-						return array_key_exists($name,$_GET);
-						break;
-					case self::ROUTER_POST:
-						return array_key_exists($name,$_POST);
-						break;
-					case self::ROUTER_CUSTOM:
-						return array_key_exists($name,self::getCustom());
-						break;
-				} # switch()
+				if(self::$as_object){
+					switch($mode){
+						case self::ROUTER_GET:
+							return in_array($name,$_GET->routes());
+							break;
+						case self::ROUTER_POST:
+							return in_array($name,$_POST->routes());
+							break;
+						case self::ROUTER_CUSTOM:
+							return in_array($name,self::getCustom()->routes());
+							break;
+					} # switch()
+				} # if()
+				else{
+					switch($mode){
+						case self::ROUTER_GET:
+							return array_key_exists($name,$_GET);
+							break;
+						case self::ROUTER_POST:
+							return array_key_exists($name,$_POST);
+							break;
+						case self::ROUTER_CUSTOM:
+							return array_key_exists($name,self::getCustom());
+							break;
+					} # switch()
+				} # else
 			} # if()
 			else{
 				self::runException('Execute decodeLink() before run this method');
@@ -724,17 +774,32 @@
 					$name
 				); # $name
 
-				switch($mode){
-					case self::ROUTER_GET:
-						$keys=array_keys($_GET);
-						break;
-					case self::ROUTER_POST:
-						$keys=array_keys($_POST);
-						break;
-					case self::ROUTER_CUSTOM:
-						$keys=array_keys(self::getCustom());
-						break;
-				} # switch()
+				if(self::$as_object){
+					switch($mode){
+						case self::ROUTER_GET:
+							$keys=$_GET->routes();
+							break;
+						case self::ROUTER_POST:
+							$keys=$_POST->routes();
+							break;
+						case self::ROUTER_CUSTOM:
+							$keys=self::getCustom()->routes();
+							break;
+					} # switch()
+				} # if()
+				else{
+					switch($mode){
+						case self::ROUTER_GET:
+							$keys=array_keys($_GET);
+							break;
+						case self::ROUTER_POST:
+							$keys=array_keys($_POST);
+							break;
+						case self::ROUTER_CUSTOM:
+							$keys=array_keys(self::getCustom());
+							break;
+					} # switch()
+				} # else
 
 				if(!empty($keys)){
 					return $keys[count($keys)-1]==$name;
@@ -989,4 +1054,95 @@
 		} # runException()
 	} # Router
 
-	class RouterException extends \Exception {};
+	class RouterException extends \Exception {}
+
+	class RouterObject {
+		protected $path;
+		protected $params;
+
+		/*
+		 * @arg^: (array) router params
+		 * @ret: (object) RouterObject
+		 * @desc: When new object are created methods put params to $params protected variable.
+		 */
+		public function __construct($params=array()){
+			if(is_array($params)){
+				$this->params=$params;
+				$this->path=NULL;
+				return $this;
+			} # if()
+			else{
+				throw new RouterObjectException('No array sent');
+			} # else
+		} # __construct()
+
+		/*
+		 * @arg: (string) route path
+		 * @ret: (object) RouteObject
+		 * @desc: Method set $path protected variable.
+		 */
+		protected function withPath($path){
+			$this->path=$path;
+			return $this;
+		} # withPath()
+
+		/*
+		 * @arg^: (string) route path
+		 * @ret: (object) RouterObject with new path
+		 * @desc: Method creates new RouterObject, set them sent path and return it.
+		 */
+		public function path($path=NULL){
+			$obj=new RouterObject($this->params);
+			return $obj->withPath($path);
+		} # path()
+
+		/*
+		 * @ret: (mixed) array or null
+		 * @desc: Method returns array from current path or null if element is empty.
+		 */
+		public function all(){
+			if(empty($this->params[$this->path])){
+				return NULL;
+			} # if()
+			else{
+				return $this->params[$this->path];
+			} # else
+		} # all()
+
+		/*
+		 * @arg^: (string) parameter to check
+		 * @ret: (mixed) array or null
+		 * @desc: Method returns value of sent parameter from current path or null if parameter is empty.
+		 */
+		public function param($param=NULL){
+			if(empty($this->params[$this->path])){
+				return NULL;
+			} # if()
+			else{
+				if(isset($this->params[$this->path][$param])){
+					return $this->params[$this->path][$param];
+				} # if()
+				else{
+					return NULL;
+				} # else
+			} # else
+		} # param()
+
+		/*
+		 * @ret: (array) all routes in current url
+		 * @desc: Method returns array with all stored routes.
+		 */
+		public function routes(){
+			return array_keys($this->params);
+		} # routes()
+
+		/*
+		 * @ret: (array) all params with routes
+		 * @desc: Method returns array with all routes and all params.
+		 */
+		public function params(){
+			return $this->params;
+		} # params()
+	} # RouterObject
+
+	class RouterObjectExceptions extends \Exception {}
