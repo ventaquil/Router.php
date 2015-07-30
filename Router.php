@@ -101,7 +101,7 @@
 			); # $link
 
 			if(!empty($link)){ # If link is not empty start decoding
-				if(preg_match('/^([a-zA-Z][a-zA-Z0-9]*([\=]([a-zA-Z0-9]+([\,][a-zA-Z0-9\-\_\.]+)?[\;]?)+)?[\/]?)+$/',$link)){ # Check link syntax
+				if(preg_match('/^([a-zA-Z0-9\-\_\.]+([\=]([a-zA-Z0-9\-\_\.]+([\,][a-zA-Z0-9\-\_\.]+)?[\;]?)+)?[\/]?)+$/',$link)){ # Check link syntax
 					$link=explode('/',$link);
 					$subview_path='';
 					foreach($link as $key=>$subview){
@@ -691,11 +691,31 @@
 
 		/*
 		 * @arg: (string) page  name
-		 * @arg^: (int) mode
 		 * @ret: (bool) true or false
 		 * @desc: Method checks sent page - if is available now then return true, false otherwise.
 		 */
-		public static function page($name,$mode=NULL){
+		public static function page($name){
+			$callback=$mode=NULL;
+
+			$args=func_get_args();
+			if(isset($args[1])){
+				if(is_callable($args[1])){
+					$callback=$args[1];
+					if(isset($args[2])){
+						$mode=$args[2];
+					} # if()
+				} # if()
+				else{
+					if(isset($arg[2])){
+						$callback=$args[1];
+						$mode=$args[2];
+					} # if()
+					else{
+						$mode=$args[1];
+					} # else
+				} # else
+			} # if()
+
 			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
 				$mode=self::$mode;
 			} # if()
@@ -721,28 +741,46 @@
 				if(self::$as_object){
 					switch($mode){
 						case self::ROUTER_GET:
-							return in_array($name,$_GET->routes());
+							$return=in_array($name,$_GET->routes());
 							break;
 						case self::ROUTER_POST:
-							return in_array($name,$_POST->routes());
+							$return=in_array($name,$_POST->routes());
 							break;
 						case self::ROUTER_CUSTOM:
-							return in_array($name,self::getCustom()->routes());
+							$return=in_array($name,self::getCustom()->routes());
 							break;
 					} # switch()
 				} # if()
 				else{
 					switch($mode){
 						case self::ROUTER_GET:
-							return array_key_exists($name,$_GET);
+							$return=array_key_exists($name,$_GET);
 							break;
 						case self::ROUTER_POST:
-							return array_key_exists($name,$_POST);
+							$return=array_key_exists($name,$_POST);
 							break;
 						case self::ROUTER_CUSTOM:
-							return array_key_exists($name,self::getCustom());
+							$return=array_key_exists($name,self::getCustom());
 							break;
 					} # switch()
+				} # else
+
+				if($callback===NULL){
+					return $return;
+				} # if()
+				else{
+					if(is_callable($callback)){
+						if($return){
+							$callback();
+							return TRUE;
+						} # if()
+						else{
+							return FALSE;
+						} # else
+					} # if()
+					else{
+						self::runException('Send argument is not callable');
+					} # else
 				} # else
 			} # if()
 			else{
@@ -752,11 +790,31 @@
 
 		/*
 		 * @arg: (string) page  name
-		 * @arg^: (int) mode
 		 * @ret: (bool) true or false
 		 * @desc: Method checks sent page - if is available now then return true, false otherwise. Level must be the same!
 		 */
-		public static function pageonly($name,$mode=NULL){
+		public static function pageonly($name){
+			$callback=$mode=NULL;
+
+			$args=func_get_args();
+			if(isset($args[1])){
+				if(is_callable($args[1])){
+					$callback=$args[1];
+					if(isset($args[2])){
+						$mode=$args[2];
+					} # if()
+				} # if()
+				else{
+					if(isset($arg[2])){
+						$callback=$args[1];
+						$mode=$args[2];
+					} # if()
+					else{
+						$mode=$args[1];
+					} # else
+				} # else
+			} # if()
+
 			if($mode===NULL){ # Check mode, if null read mode from $mode private variable
 				$mode=self::$mode;
 			} # if()
@@ -807,10 +865,23 @@
 				} # else
 
 				if(!empty($keys)){
-					return $keys[count($keys)-1]==$name;
+					$return=$keys[count($keys)-1]==$name;
 				} # if()
 				else{
-					return $name==NULL;
+					$return=$name==NULL;
+				} # else
+
+				if($return){
+					if(is_callable($callback)&&$return){
+						$callback();
+						return TRUE;
+					} # if()
+					else{
+						return $return;
+					} # else
+				} # if()
+				else{
+					return FALSE;
 				} # else
 			} # if()
 			else{

@@ -10,9 +10,9 @@
 
 		public static function checkParams($rules,$mode);
 
-		public static function page($name,$mode);
+		public static function page($name);
 
-		public static function pageonly($name,$mode);
+		public static function pageonly($name);
 
 		public static function link($string,$base);
 
