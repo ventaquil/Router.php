@@ -514,7 +514,12 @@
 			if(isset($data[1])){
 				switch($data[0]){
 					case ':'.$data[1]:
-						return $value==$data[1];
+						if(($data[1][0]=='/')&&($data[1][count($data[1])-1]=='/')){
+							return preg_match($data[1],$value);
+						} # if()
+						else{
+							return $value==$data[1];
+						} # else
 						break;
 					case '+':
 						return strlen($value)>0;
