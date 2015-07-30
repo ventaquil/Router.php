@@ -35,6 +35,7 @@
                 \s -> string
                 Operators:
                         : -> string equal to s, for simple: \c:s it means that variable is equal to 's'; available: c,s
+                                if you write /s/ 's' is treated like a regular expression
                         (a;b) -> length of string is from open interval from a to b, for simple: \s(12;14); available: s
                                 i means positive infinity (optional +i)
                                 n means no terms, for simple: \s(3;n) means lenght(s)>3
