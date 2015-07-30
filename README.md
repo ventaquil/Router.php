@@ -1,6 +1,6 @@
 # Router.php
 
-###Some characteristics and modificators:
+### Some characteristics and modificators:
 
         Special:
                 \p -> null value
@@ -48,7 +48,7 @@
                         >=a -> length of string is more equal to a, for simple: \s>=14; available: s
                         =a -> length of string is equal to a, for simple: \s=39; available: s
 
-###Decode link:
+### Decode link:
 
 ```php
         Router::decodeLink($_SERVER['REQUEST_URI']);
@@ -58,7 +58,7 @@ or
         Router::decodeLink('some/link',Router::ROUTER_POST);
 ```
 
-###Declare view:
+### Declare view:
 
 ```php
         $view=array(
@@ -72,27 +72,34 @@ or
         ); # $view
 ```
 
-###Check link
+### Check link
 
 ```php
 		use ventaquil\Router;
 
+        // url: localhost/basic/more
 		if(Router::checkParams($view)){
-			if(Router::page('basic')){
+			if(Router::page('basic')){ // return true for this url
 				// code
 			} # if()
-			elseif(Router::page('basic/more')){
+			elseif(Router::page('basic/more')){ // return true for this url
 				// it works!
 			} # elseif()
-			elseif(Router::page('basic/unknownpage')){
+			elseif(Router::page('basic/unknownpage')){ // return false for this url
 				// it works too!
 			} # elseif()
+			
+			var_dump(Router::pageonly('basic')); // return false for this url
+			var_dump(Router::pageonly('basic/more')); // return true for this url
 		} # if()
 ```
 
-###Object mode
+### Object mode
 ```php
 		Router::setObjectMode(TRUE);
 		Router::decodeLink($_SERVER['REQUEST_URI']);
 		var_dump($_GET); // ventaquil\RouterObject
+		var_dump($_GET->path('url/path')->all()); // get all variables from route url/path
+		var_dump($_GET->params()); // get all variables from all routes
+		var_dump($_GET->path('path')->param('arg')); // get parameter arg from path route
 ```
