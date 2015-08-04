@@ -933,7 +933,7 @@
 		 * @desc: Method generates link.
 		 */
 		public static function link($string,$base=NULL){
-			if(reg_match('/^(\&|(\%)([!]{0,2}))?([0-9]*)?(.*?)(\*)?(?:\[(.*)\])?$/',$string,$matches)){ 
+			if(reg_match('/^(\&|(\%)([!]{0,2}))?([0-9]*)?(.*?)(\*)?(?:\[(.*)\])?$/',$string,$matches)){
 				self::editbase($base);
 
 				switch($matches[0]){
@@ -1027,7 +1027,7 @@
 							return 'http://'.implode('/',$base);
 						} # if()
 						else{
-							return 'http://'.$base.'/'.$matches[2];
+							return 'http://'.$base.((substr($base,-1)!='/')?'/':NULL).$matches[2];
 						} # else
 						break;
 					case '%':
