@@ -59,7 +59,7 @@
 * `(.*)` -> `http://$1` **|** For simple: `link('a')` on any link returns `http://a`
 * `&(.*)` -> `c/$1` **|** For simple: `link('&b')` on link `localhost/a` returns `localhost/a/b`
 * `&([0-9]+)(.*)` -> `$2` goes to `$1-th` position **|** For simple: `link('&1b')` on link `localhost/a/c/d/e` returns `localhost/a/b` (**Important!** `$1` is indexed from 0!)
-* `%` -> link without last position **|** For simple: `link('%')` on link `localhost/a/b/c/d` returns `loclahost/a/b/c`
+* `%` -> link without last position **|** For simple: `link('%')` on link `localhost/a/b/c/d` returns `localhost/a/b/c`
 * `%([0-9]+)` -> link without `$1-th` position (and bigger numbers) **|** For simple: `link('%2')` on link `localhost/a/b/c/d/e/f/g` returns `localhost/a/b/c`
 * `%!` -> working like `%` but delete all parameters in link on position where we jump **|** For simple: `link('%!')` on link `localhost/a=param,value/b` returns `localhost/a` **|** Also working with numbers: `%!([0-9]+)`
 * `%!!` -> working like `%` but delete all parameters in link on every position **|** For simple: `link('%!!')` on link `localhost/a=param,value/b=anotherparam/c` returns `localhost/a/b` **|** Also working with numbers: `%!!([0-9]+)`
