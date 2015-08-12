@@ -706,7 +706,7 @@
 					} # if()
 				} # if()
 				else{
-					if(isset($arg[2])){
+					if(isset($args[2])){
 						$callback=$args[1];
 						$mode=$args[2];
 					} # if()
@@ -805,7 +805,7 @@
 					} # if()
 				} # if()
 				else{
-					if(isset($arg[2])){
+					if(isset($args[2])){
 						$callback=$args[1];
 						$mode=$args[2];
 					} # if()
@@ -885,8 +885,8 @@
 				} # else
 			} # if()
 			else{
-				return FALSE;
 				self::runException('Execute decodeLink() before run this method');
+				return FALSE;
 			} # else
 		} # pageonly()
 
@@ -939,7 +939,6 @@
 				switch($matches[0]){
 					case NULL:
 						return 'http://'.$matches[1];
-						break;
 					case '&':
 						if(is_numeric($matches[1])){
 							$matches[2]=explode('=',$matches[2]);
@@ -986,6 +985,7 @@
 
 										if(preg_match('/'.$view.'=(?:.*?)?(?:'.$intopregmatch.')[\;]?/',$base[$matches[1]+1])){
 											$replace=explode(';',$matches[2][1]);
+											$to=$from=array();
 											foreach($replace as $key=>$value){
 												$strpos=strpos($value,',');
 												if($strpos>0){
@@ -1029,7 +1029,6 @@
 						else{
 							return 'http://'.$base.((substr($base,-1)!='/')?'/':NULL).$matches[2];
 						} # else
-						break;
 					case '%':
 					case '%!':
 					case '%!!':
@@ -1090,7 +1089,6 @@
 						else{
 							self::runException('Incorrect link format');
 						} # else
-						break;
 				} # switch()
 			} # if()
 		} # link()
