@@ -41,10 +41,8 @@
 				$a=preg_match($pattern,$subject,$matches,PREG_OFFSET_CAPTURE);
 				$matches=optimizeRegexArray($matches);
 				return $a;
-				break;
 			case REG_MATCH_OLD:
 				return preg_match($pattern,$subject,$matches);
-				break;
 			default:
 				throw new Exception('Unknown mode');
 		} # switch()
@@ -56,10 +54,8 @@
 				$a=preg_match_all($pattern,$subject,$matches,$flags|PREG_OFFSET_CAPTURE);
 				$matches=optimizeRegexArrayAll($matches,$flags&PREG_OFFSET_CAPTURE);
 				return $a;
-				break;
 			case REG_MATCH_OLD:
 				return preg_match_all($pattern,$subject,$matches,$flags);
-				break;
 			default:
 				throw new Exception('Unknown mode');
 		} # switch()
