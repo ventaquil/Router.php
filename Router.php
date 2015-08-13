@@ -221,7 +221,7 @@
 							$return&=self::validateArguments($rules[$path],$params_array);
 						} # if()
 
-						if($return==FALSE){ # Break if return value is false
+						if($return===FALSE){ # Break if return value is false
 							break;
 						} # if()
 					} # foreach()
@@ -273,22 +273,16 @@
 				switch($data[1]){
 					case '+':
 						return $value>0;
-						break;
 					case '<'.$data[3]:
 						return $value<$data[3];
-						break;
 					case '<='.$data[3]:
 						return $value<=$data[3];
-						break;
 					case '>'.$data[3]:
 						return $value>$data[3];
-						break;
 					case '>='.$data[3]:
 						return $value>=$data[3];
-						break;
 					case '='.$data[3]:
 						return $value==$data[3];
-						break;
 					default:
 						if(($data[3]!='n')&&($data[4]!='n'||$data[4]!='i'||$data[4]!='i+')){
 							switch($data[1]){
@@ -309,19 +303,15 @@
 							switch($data[2]){
 								case '(':
 									return (($data[3]!='n'&&$data[3]<$value)||($data[3]=='n'));
-									break;
 								case '<':
 									return (($data[3]!='n'&&$data[3]<=$value)||($data[3]=='n'));
-									break;
 							} # switch()
 
-							switch($matches[5]){
+							switch($data[5]){
 								case ')':
-									return (($matches[4]!='n'&&$matches[4]>$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-									break;
+									return (($data[4]!='n'&&$data[4]>$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
 								case '>':
-									return (($matches[4]!='n'&&$matches[4]!='i'&&$matches[4]!='i+'&&$matches[4]>=$value)||($matches[4]=='n'||$matches[4]=='i'||$matches[4]=='i+'));
-									break;
+									return (($data[4]!='n'&&$data[4]!='i'&&$data[4]!='i+'&&$data[4]>=$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
 								} # switch()
 							} # if()
 							else{
@@ -348,25 +338,18 @@
 				switch($data[1]){
 					case '+':
 						return $value>0;
-						break;
 					case '-':
 						return $value<0;
-						break;
 					case '<'.$data[3]:
 						return $value<$data[3];
-						break;
 					case '<='.$data[3]:
 						return $value<=$data[3];
-						break;
 					case '>'.$data[3]:
 						return $value>$data[3];
-						break;
 					case '>='.$data[3]:
 						return $value>=$data[3];
-						break;
 					case '='.$data[3]:
 						return $value==$data[3];
-						break;
 					default:
 						if(($data[3]!='n'||$data[3]!='i-')&&($data[4]!='n'||$data[4]!='i'||$data[4]!='i+')){
 							switch($data[1]){
@@ -387,19 +370,15 @@
 							switch($data[2]){
 								case '(':
 									return (($data[3]!='n'&&$data[3]!='i-'&&$data[3]<$value)||($data[3]=='n'||$data[3]=='i-'));
-									break;
 								case '<':
 									return (($data[3]!='n'&&$data[3]!='i-'&&$data[3]<=$value)||($data[3]=='n'||$data[3]=='i-'));
-									break;
 							} # switch()
 
 							switch($data[5]){
 								case ')':
 									return (($data[4]!='n'&&$data[4]>$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
-									break;
 								case '>':
 									return (($data[4]!='n'&&$data[4]!='i'&&$data[4]!='i+'&&$data[4]>=$value)||($data[4]=='n'||$data[4]=='i'||$data[4]=='i+'));
-									break;
 							} # switch()
 						} # if()
 						else{
@@ -520,25 +499,18 @@
 						else{
 							return $value==$data[1];
 						} # else
-						break;
 					case '+':
 						return strlen($value)>0;
-						break;
 					case '<'.$data[2]:
 						return strlen($value)<$data[2];
-						break;
 					case '<='.$data[2]:
 						return strlen($value)<=$data[2];
-						break;
 					case '>'.$data[2]:
 						return strlen($value)>$data[2];
-						break;
 					case '>='.$data[2]:
 						return strlen($value)>=$data[2];
-						break;
 					case '='.$data[2]:
 						return strlen($value)==$data[2];
-						break;
 					default:
 						if(($data[3]!='n')&&($data[4]!='n'||$data[4]!='i'||$data[4]!='i+')){
 							switch($data[1]){
@@ -560,19 +532,15 @@
 							switch($data[1]){
 								case '(':
 									return (($data[2]!='n'&&$data[2]<$strlen)||($data[2]=='n'));
-									break;
 								case '<':
 									return (($data[2]!='n'&&$data[2]<=$strlen)||($data[2]=='n'));
-									break;
 							} # switch()
 
 							switch($data[4]){
 								case ')':
 									return (($data[3]!='n'&&$data[3]>$strlen)||($data[3]=='n'||$data[3]=='i'||$data[3]=='i+'));
-									break;
 								case '>':
 									return (($data[3]!='n'&&$data[3]!='i'&&$data[3]!='i+'&&$data[3]>=$strlen)||($data[3]=='n'||$data[3]=='i'||$data[3]=='i+'));
-									break;
 							} # switch()
 						} # if()
 						else{
@@ -664,7 +632,7 @@
 					} # switch()
 				} # if()
 
-				if($return==FALSE){ # Break loop if return value is false
+				if($return===FALSE){ # Break loop if return value is false
 					break;
 				} # if()
 			} # foreach()
